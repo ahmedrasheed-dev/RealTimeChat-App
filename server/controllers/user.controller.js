@@ -47,8 +47,7 @@ export const login = asyncHandler(async (req, res) => {
 
 //controller to check if user is authenticated
 export const checkAuth = asyncHandler(async (req, res) => {
-    const userId = req.userId;
-    res.json({ success: true, userId });
+    res.json({ success: true, user: req.user });
 });
 
 //controller to update user profile

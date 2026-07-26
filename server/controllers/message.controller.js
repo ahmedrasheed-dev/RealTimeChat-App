@@ -36,7 +36,7 @@ export const getUsersForSidebar = asyncHandler(async (req, res) => {
 //get all msgs for selected user
 export const getMessagesForUser = asyncHandler(async (req, res) => {
     const loggedInUserId = req.userId;
-    const selectedUserId = req.params.userId;
+    const selectedUserId = req.params.id;
 
     const messages = await Message.find({
         $or: [
@@ -54,7 +54,7 @@ export const getMessagesForUser = asyncHandler(async (req, res) => {
 //controller to mark message as seen
 export const markMessageAsSeen = asyncHandler(async (req, res) => {
     const loggedInUserId = req.userId;
-    const { messageId } = req.params;
+    const messageId = req.params.id;
 
     const message = await Message.findOne({
         _id: messageId,
@@ -74,7 +74,7 @@ export const markMessageAsSeen = asyncHandler(async (req, res) => {
 export const sendMessage = asyncHandler(async (req, res) => {
     const senderId = req.userId;
     const { text, image } = req.body;
-    const receiverId = req.params.userId;
+    const receiverId = req.params.id;
 
     let imageUrl = null;
     if (image) {

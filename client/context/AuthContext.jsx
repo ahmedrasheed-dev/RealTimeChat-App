@@ -62,6 +62,32 @@ export const AuthProvider = ({ children }) => {
         }
     }
 
+    const logout = async () => {
+        localStorage.removeItem("token");
+        setToken(null)
+        setAuthUser(null)
+        setOnlineUsers([]);
+        axios.defaults.headers.common["token"] = null;
+        toast.success("Logout Success")
+        socket.disconnect();
+    }
+
+    //to update profile
+    const updateProfile = async (body) => {
+        try {
+            const { data } = await axios.put("/api/auth/update-profile", body);
+            if (data.success) {
+                setAuthUser(data.user);
+                toast.success("Profile updated successfully")
+            }
+
+        }
+        catch (error) {
+            toast.error(error.message)
+
+        }
+    }
+
 
     //socket conection and user updates
     const connectSocket = (userData) => {
@@ -83,10 +109,10 @@ export const AuthProvider = ({ children }) => {
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         }
         checkAuth();
-    }, [token]);
+    }, []);
 
 
-    const value = { axios, authUser, onlineUsers, socket };
+    const value = { axios, authUser, onlineUsers, socket, login, logout, updateProfile };
 
     return (
         <AuthContext.Provider value={value}>

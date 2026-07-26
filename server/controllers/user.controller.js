@@ -3,7 +3,7 @@ import { asyncHandler } from "../lib/asyncHandler.js";
 import { AppError } from "../lib/AppError.js";
 import { generateToken } from "../lib/utils.js";
 import cloudinary from "../lib/cloudinary.js";
-
+import bcrypt from 'bcryptjs'
 // Signup a new user
 export const signup = asyncHandler(async (req, res) => {
     const { fullName, email, password, bio } = req.body;

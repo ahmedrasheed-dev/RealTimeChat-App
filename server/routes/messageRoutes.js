@@ -3,9 +3,9 @@ import { getMessagesForUser, getUsersForSidebar, markMessageAsSeen, sendMessage 
 import { protectRoute } from "../middlewares/auth.middleware.js";
 const messageRouter = express.Router();
 
-messageRouter.get("/users", getUsersForSidebar);
+messageRouter.get("/users", protectRoute, getUsersForSidebar);
 messageRouter.get("/:id", protectRoute, getMessagesForUser);
 messageRouter.post("/send/:id", protectRoute, sendMessage);
-messageRouter.put("mark/:id", protectRoute, markMessageAsSeen);
+messageRouter.put("/mark/:id", protectRoute, markMessageAsSeen);
 
 export default messageRouter;

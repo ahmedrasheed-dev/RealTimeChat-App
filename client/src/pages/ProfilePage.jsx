@@ -1,16 +1,31 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect, useContext } from 'react'
 import assets from '../assets/assets'
+import { AuthContext } from '../../context/AuthContext'
+import { useNavigate } from 'react-router-dom';
+
 
 const ProfilePage = () => {
   const fileInputRef = useRef(null)
+  const { authUser, updateProfile } = useContext(AuthContext)
   const [formData, setFormData] = useState({
-    fullName: '',
-    bio: '',
-    profileImage: null,
+    fullName: authUser.fullName,
+    bio: authUser.bio,
+    profilePic: null,
     previewUrl: ''
   })
   const [error, setError] = useState('')
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!authUser) return
+    setFormData((prev) => ({
+      ...prev,
+      fullName: authUser.fullName || '',
+      bio: authUser.bio || '',
+      previewUrl: authUser.profilePic || prev.previewUrl,
+      profilePic: null
+    }))
+  }, [authUser])
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -18,7 +33,6 @@ const ProfilePage = () => {
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
-
     if (!file) return
 
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg']
@@ -27,17 +41,37 @@ const ProfilePage = () => {
       return
     }
 
-    setError('')
-    setFormData((prev) => ({
-      ...prev,
-      profileImage: file,
-      previewUrl: URL.createObjectURL(file)
-    }))
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result
+      setError('')
+      setFormData((prev) => ({
+        ...prev,
+        profilePic: dataUrl,
+        previewUrl: dataUrl
+      }))
+    }
+    reader.onerror = () => setError('Failed to read file')
+    reader.readAsDataURL(file)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('Profile saved:', formData)
+
+    const payload = {
+      fullName: formData.fullName,
+      bio: formData.bio,
+      profilePic: formData.profilePic || null
+    }
+
+    try {
+      await updateProfile(payload)
+      console.log('Profile saved:', payload)
+      navigate('/')
+      return;
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   return (

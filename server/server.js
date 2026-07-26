@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+dotenv.config({ path: new URL('./.env', import.meta.url).pathname });
 import cors from 'cors';
 import http from 'http';
 import { asyncHandler } from './lib/asyncHandler.js';
@@ -9,7 +10,7 @@ import userRouter from './routes/userRoutes.js';
 import messageRouter from './routes/messageRoutes.js';
 import { Server } from 'socket.io';
 
-dotenv.config();
+const __dirname = new URL('.', import.meta.url).pathname;
 const app = express();
 const server = http.createServer(app);
 
@@ -55,6 +56,21 @@ app.get('/api/test-error', asyncHandler((req, res) => {
     throw new AppError('This is a custom application error', 400);
 }));
 
+// connect to MongoDB
+try {
+    await connectDB();
+} catch (error) {
+    console.error('MongoDB startup failed:', error.message);
+}
+
+// ROUTES
+
+app.get('/api/status', asyncHandler((req, res) => {
+    res.status(200).json({ status: 'ok' });
+}));
+app.use('/api/auth', userRouter);
+app.use('/api/messages', messageRouter);
+
 // unknown route handler
 app.use((req, res, next) => {
     next(new AppError('Route not found', 404));
@@ -75,21 +91,6 @@ app.use((err, req, res, next) => {
         error: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
 });
-
-// connect to MongoDB
-try {
-    await connectDB();
-} catch (error) {
-    console.error('MongoDB startup failed:', error.message);
-}
-
-// ROUTES
-
-app.get('/api/status', asyncHandler((req, res) => {
-    res.status(200).json({ status: 'ok' });
-}));
-app.use('/api/auth', userRouter);
-app.use('/api/messages', messageRouter);
 
 
 const PORT = process.env.PORT || 3002;

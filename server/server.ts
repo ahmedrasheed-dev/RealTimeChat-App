@@ -1,6 +1,6 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
-dotenv.config({ path: new URL('./.env', import.meta.url).pathname });
+dotenv.config();
 import cors from 'cors';
 import http from 'http';
 import { asyncHandler } from './lib/asyncHandler.js';
@@ -8,37 +8,36 @@ import { AppError } from './lib/AppError.js';
 import { connectDB } from './lib/db.js';
 import userRouter from './routes/userRoutes.js';
 import messageRouter from './routes/messageRoutes.js';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
-const __dirname = new URL('.', import.meta.url).pathname;
 const app = express();
 const server = http.createServer(app);
 
-//init socket.io
+// init socket.io
 export const io = new Server(server, {
     cors: {
         origin: "*"
     },
 });
 
+export const userSocketMap: Record<string, string> = {}; // userId -> socketId 
 
-export const userSocketMap = {}; // userId -> socketId 
-
-//socket connection
-io.on('connection', (socket) => {
+// socket connection
+io.on('connection', (socket: Socket) => {
     console.log('A user connected:', socket.id);
-    const userId = socket.handshake.query.userId;
+    const userId = socket.handshake.query.userId as string | undefined;
     if (userId) {
         userSocketMap[userId] = socket.id;
     }
 
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-
     // Handle user disconnection
     socket.on('disconnect', () => {
         console.log('A user disconnected:', socket.id);
-        delete userSocketMap[userId];
+        if (userId) {
+            delete userSocketMap[userId];
+        }
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     });
 });
@@ -52,7 +51,7 @@ app.use(express.json({ limit: '4mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // test error route
-app.get('/api/test-error', asyncHandler((req, res) => {
+app.get('/api/test-error', asyncHandler(async (_req: Request, _res: Response) => {
     throw new AppError('This is a custom application error', 400);
 }));
 
@@ -60,29 +59,29 @@ app.get('/api/test-error', asyncHandler((req, res) => {
 try {
     await connectDB();
 } catch (error) {
-    console.error('MongoDB startup failed:', error.message);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('MongoDB startup failed:', message);
 }
 
 // ROUTES
-
-app.get('/api/status', asyncHandler((req, res) => {
+app.get('/api/status', asyncHandler(async (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok' });
 }));
 app.use('/api/auth', userRouter);
 app.use('/api/messages', messageRouter);
 
 // unknown route handler
-app.use((req, res, next) => {
+app.use((_req: Request, _res: Response, next: NextFunction) => {
     next(new AppError('Route not found', 404));
 });
 
-// errror handling middleware
-app.use((err, req, res, next) => {
+// error handling middleware
+app.use((err: AppError | Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err);
 
-    const statusCode = err.statusCode || 500;
+    const statusCode = 'statusCode' in err && typeof err.statusCode === 'number' ? err.statusCode : 500;
     const message = err.message || 'Internal Server Error';
-    const details = err.details || null;
+    const details = 'details' in err ? err.details : null;
 
     res.status(statusCode).json({
         success: false,
@@ -91,7 +90,6 @@ app.use((err, req, res, next) => {
         error: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
 });
-
 
 const PORT = process.env.PORT || 3002;
 server.listen(PORT, () => {

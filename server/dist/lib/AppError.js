@@ -1,4 +1,6 @@
 class AppError extends Error {
+    statusCode;
+    details;
     constructor(message, statusCode = 500, details = null) {
         super(message);
         this.name = 'AppError';
@@ -7,5 +9,4 @@ class AppError extends Error {
         Error.captureStackTrace?.(this, this.constructor);
     }
 }
-
 export { AppError };

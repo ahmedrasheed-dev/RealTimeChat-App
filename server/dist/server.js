@@ -9,6 +9,7 @@ import { connectDB } from './lib/db.js';
 import userRouter from './routes/userRoutes.js';
 import messageRouter from './routes/messageRoutes.js';
 import { Server } from 'socket.io';
+import events from './lib/events.js';
 const app = express();
 const server = http.createServer(app);
 // init socket.io
@@ -35,9 +36,33 @@ io.on('connection', (socket) => {
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     });
 });
+// listen for application-level events and forward to sockets
+events.on('userCreated', (user) => {
+    try {
+        io.emit('newUser', user);
+    }
+    catch (err) {
+        console.warn('Failed to emit newUser via socket.io', err);
+    }
+});
 // middleware
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    'https://real-time-chat-app-nu-wine.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+].filter(Boolean);
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        // allow requests with no origin (like mobile apps, curl, postman)
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+            callback(null, true);
+        }
+        else {
+            callback(null, true); // Permissive CORS for deployed clients
+        }
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 }));
 app.use(express.json({ limit: '4mb' }));

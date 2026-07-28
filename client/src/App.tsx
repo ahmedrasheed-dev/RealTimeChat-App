@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage.js'
 import ProfilePage from './pages/ProfilePage.js'
 import { Toaster } from 'react-hot-toast'
 import { AuthContext } from '../context/AuthContext.js'
+import assets from './assets/assets.js'
 
 const App: FC = () => {
     const authContext = useContext(AuthContext)
@@ -15,7 +16,7 @@ const App: FC = () => {
     const { authUser } = authContext
 
     return (
-        <div className='bg-[url("./src/assets/bgImage.svg")] bg-contain'>
+        <div style={{ backgroundImage: `url(${assets.bgImage})` }} className='bg-contain min-h-screen'>
             <Toaster />
             <Routes>
                 <Route path='/' element={authUser ? <HomePage /> : <Navigate to='/login' />} />

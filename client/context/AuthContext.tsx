@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 import type { AxiosInstance as AxiosInstanceType } from 'axios';
 import type { IUser } from '../src/types/user.types.js'
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://realtimechat-app-q11p.onrender.com';
 axios.defaults.baseURL = backendUrl;
 
 const isAxiosError = (error: unknown): error is AxiosError => axios.isAxiosError(error);
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
 
         try {
-            const { data } = await axios.get("api/auth/check", {
+            const { data } = await axios.get("/api/auth/check", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     //login function
     const login = async (state: 'signup' | 'login', credentials: AuthCredentials) => {
         try {
-            const { data } = await axios.post(`api/auth/${state}`, credentials)
+            const { data } = await axios.post(`/api/auth/${state}`, credentials)
             if (data?.success) {
                 setAuthUser(data.user);
                 connectSocket(data.user);

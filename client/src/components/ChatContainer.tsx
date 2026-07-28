@@ -1,16 +1,20 @@
-import React, { useEffect, useRef, useState, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
-import { ChatContext } from '../../context/ChatContext';
-import assets from '../assets/assets';
+import React, { useEffect, useRef, useState, useContext, type ChangeEvent, type FC } from 'react';
+import { AuthContext } from '../../context/AuthContext.js';
+import { ChatContext } from '../../context/ChatContext.js';
+import assets from '../assets/assets.js';
 import { formatMessageTime } from '../lib/utils.js';
 
-const ChatContainer = () => {
-    const { authUser, onlineUsers } = useContext(AuthContext);
+const ChatContainer: FC = () => {
+    const authContext = useContext(AuthContext);
+    if (!authContext) {
+        throw new Error('AuthContext must be used within AuthProvider');
+    }
+    const { authUser, onlineUsers } = authContext;
     const { selectedUser, setSelectedUser, messages, sendMessage, isMessagesLoading } = useContext(ChatContext);
 
-    const [text, setText] = useState('');
-    const [imagePreview, setImagePreview] = useState(null);
-    const messagesContainerRef = useRef(null);
+    const [text, setText] = useState<string>('');
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
     // Auto-scroll inside messages container ONLY without scrolling the outer window
     useEffect(() => {
@@ -23,13 +27,15 @@ const ChatContainer = () => {
     }, [messages]);
 
     // Handle Image file selection (Convert to Base64)
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
+    const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onloadend = () => {
-            setImagePreview(reader.result);
+            if (typeof reader.result === 'string') {
+                setImagePreview(reader.result);
+            }
         };
         reader.readAsDataURL(file);
     };
@@ -71,7 +77,7 @@ const ChatContainer = () => {
         );
     }
 
-    const isOnline = onlineUsers.includes(selectedUser._id);
+    const isOnline = onlineUsers?.includes(selectedUser._id);
 
     return (
         <div className={`h-full min-h-0 flex flex-col relative bg-[#15102a]/60 backdrop-blur-xl overflow-hidden ${!selectedUser ? 'max-md:hidden' : ''}`}>
@@ -84,7 +90,7 @@ const ChatContainer = () => {
                     >
                         <img src={assets.arrow_icon} alt="Back" className='w-5 h-5' />
                     </button>
-                    
+
                     <div className="relative flex-shrink-0">
                         <img
                             src={selectedUser.profilePic || assets.avatar_icon}
@@ -157,11 +163,10 @@ const ChatContainer = () => {
                                         </div>
                                     )}
                                     {message.text && (
-                                        <div className={`px-4 py-3 text-sm leading-relaxed rounded-2xl break-words shadow-md ${
-                                            isSentByMe
-                                                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-br-xs shadow-violet-900/30'
-                                                : 'bg-[#221c3d]/90 border border-white/10 text-gray-100 rounded-bl-xs shadow-black/20'
-                                        }`}>
+                                        <div className={`px-4 py-3 text-sm leading-relaxed rounded-2xl break-words shadow-md ${isSentByMe
+                                            ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-br-xs shadow-violet-900/30'
+                                            : 'bg-[#221c3d]/90 border border-white/10 text-gray-100 rounded-bl-xs shadow-black/20'
+                                            }`}>
                                             {message.text}
                                         </div>
                                     )}
@@ -213,7 +218,7 @@ const ChatContainer = () => {
                         placeholder='Type a message...'
                         className='flex-1 text-sm py-2.5 bg-transparent border-none outline-none text-white placeholder-gray-400'
                     />
-                    
+
                     <input
                         type="file"
                         id="image"
@@ -232,9 +237,8 @@ const ChatContainer = () => {
                     <button
                         onClick={handleSend}
                         disabled={!text.trim() && !imagePreview}
-                        className={`p-2.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/30 flex-shrink-0 transition-all duration-200 ${
-                            !text.trim() && !imagePreview ? 'opacity-40 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'
-                        }`}
+                        className={`p-2.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/30 flex-shrink-0 transition-all duration-200 ${!text.trim() && !imagePreview ? 'opacity-40 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'
+                            }`}
                     >
                         <img src={assets.send_button} alt="Send" className='w-4 h-4 object-contain invert' />
                     </button>

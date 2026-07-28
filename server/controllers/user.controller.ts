@@ -5,6 +5,7 @@ import { AppError } from "../lib/AppError.js";
 import { generateToken } from "../lib/utils.js";
 import cloudinary from "../lib/cloudinary.js";
 import bcrypt from 'bcryptjs';
+import events from '../lib/events.js';
 
 interface SignupBody {
     fullName?: string;
@@ -41,6 +42,14 @@ export const signup = asyncHandler(async (req: Request<{}, {}, SignupBody>, res:
     const hashedPassword = bcrypt.hashSync(password, salt);
 
     const user = await User.create({ fullName, email, password: hashedPassword, bio });
+
+    // notify runtime that a new user was created so server can broadcast to sockets
+    try {
+        events.emit('userCreated', user);
+    } catch (err) {
+        // non-fatal — continue
+        console.warn('Failed to emit userCreated event', err);
+    }
 
     const token = generateToken(user._id.toString());
 

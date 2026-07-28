@@ -160,6 +160,24 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
         };
     }, [socket, selectedUser]);
 
+    // Socket listener for newly created users so sidebar updates in real-time
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewUser = (newUser: IUser) => {
+            setUsers((prev) => {
+                if (prev.find((u) => u._id === newUser._id)) return prev;
+                return [newUser, ...prev];
+            });
+        };
+
+        socket.on('newUser', handleNewUser);
+
+        return () => {
+            socket.off('newUser', handleNewUser);
+        };
+    }, [socket]);
+
     const value = {
         messages,
         users,

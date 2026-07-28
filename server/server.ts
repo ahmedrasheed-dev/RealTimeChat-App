@@ -9,6 +9,7 @@ import { connectDB } from './lib/db.js';
 import userRouter from './routes/userRoutes.js';
 import messageRouter from './routes/messageRoutes.js';
 import { Server, Socket } from 'socket.io';
+import events from './lib/events.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -40,6 +41,15 @@ io.on('connection', (socket: Socket) => {
         }
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     });
+});
+
+// listen for application-level events and forward to sockets
+events.on('userCreated', (user) => {
+    try {
+        io.emit('newUser', user);
+    } catch (err) {
+        console.warn('Failed to emit newUser via socket.io', err);
+    }
 });
 
 // middleware
